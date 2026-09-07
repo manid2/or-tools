@@ -31,7 +31,10 @@ ORTOOLS_LLVM_FLAGS = []
 ORTOOLS_LLVM_TEST_FLAGS = []
 
 # msvc
-ORTOOLS_MSVC_FLAGS = []
+ORTOOLS_MSVC_FLAGS = [
+    "/std:c++20",
+    "/Zc:preprocessor",  # Enable preprocessor conformance mode needed to correctly support __VA_OPT__
+]
 ORTOOLS_MSVC_LINKOPTS = []
 ORTOOLS_MSVC_TEST_FLAGS = []
 
