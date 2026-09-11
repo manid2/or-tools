@@ -461,6 +461,7 @@ configure_file(
 
 set(is_windows "$<PLATFORM_ID:Windows>")
 set(is_not_windows "$<NOT:$<PLATFORM_ID:Windows>>")
+set(is_s390x "$<STREQUAL:${CMAKE_SYSTEM_PROCESSOR},s390x>")
 
 set(need_unix_zlib_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_ZLIB}>>")
 set(need_windows_zlib_lib "$<AND:${is_windows},$<BOOL:${BUILD_ZLIB}>>")
@@ -474,7 +475,7 @@ set(need_windows_absl_lib "$<AND:${is_windows},$<BOOL:${BUILD_absl}>>")
 set(need_unix_re2_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_re2}>>")
 set(need_windows_re2_lib "$<AND:${is_windows},$<BOOL:${BUILD_re2}>>")
 
-set(need_unix_protobuf_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_Protobuf}>>")
+set(need_unix_protobuf_lib "$<AND:${is_not_windows},$<NOT:${is_s390x}>,$<BOOL:${BUILD_Protobuf}>>")
 set(need_windows_protobuf_lib "$<AND:${is_windows},$<BOOL:${BUILD_Protobuf}>>")
 
 set(need_unix_coinutils_lib "$<AND:${is_not_windows},$<BOOL:${BUILD_CoinUtils}>>")
@@ -606,9 +607,13 @@ add_custom_command(
     ${PYTHON_PROJECT}/.libs
 
   COMMAND ${CMAKE_COMMAND} -E
-    $<IF:$<BOOL:${BUILD_Protobuf}>,copy,true>
+    $<IF:${need_unix_protobuf_lib},copy,true>
     $<${need_unix_protobuf_lib}:$<TARGET_SONAME_FILE:protobuf::libprotobuf>>
     $<${need_unix_protobuf_lib}:$<TARGET_SONAME_FILE:utf8_validity>>
+    ${PYTHON_PROJECT}/.libs
+
+  COMMAND ${CMAKE_COMMAND} -E
+    $<IF:${need_windows_protobuf_lib},copy,true>
     $<${need_windows_protobuf_lib}:$<TARGET_FILE:protobuf::libprotobuf>>
     $<${need_windows_protobuf_lib}:$<TARGET_FILE:utf8_validity>>
     ${PYTHON_PROJECT}/.libs
