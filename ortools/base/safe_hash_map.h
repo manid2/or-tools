@@ -1469,15 +1469,22 @@ class safe_hash_map {
     (void)main_bucket;
     size_t bmask;
     memcpy(&bmask, align + 0, sizeof(bmask));
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    bmask = __builtin_bswap64(bmask);
+#endif
     bmask >>= boset;  // bmask |= ((size_t)align[8] << (SIZE_BIT - boset));
-    if (EMH_LIKELY(bmask != 0)) return bucket_from + CTZ(bmask);
+    if (EMH_LIKELY(bmask != 0)) return bucket_from + __builtin_ctzll(bmask);
 #else
     const auto boset = bucket_from % 8;
     auto* const align = (uint8_t*)_bitmask + bucket_from / 8;
     (void)main_bucket;
-    const size_t bmask =
-        (*(size_t*)(align) >> boset);  // & 0xF0F0F0F0FF0FF0FFull;//
-    if (EMH_LIKELY(bmask != 0)) return bucket_from + CTZ(bmask);
+    size_t bmask_raw;
+    memcpy(&bmask_raw, align, sizeof(bmask_raw));
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    bmask_raw = __builtin_bswap64(bmask_raw);
+#endif
+    const size_t bmask = (bmask_raw >> boset);  // & 0xF0F0F0F0FF0FF0FFull;//
+    if (EMH_LIKELY(bmask != 0)) return bucket_from + __builtin_ctzll(bmask);
 #endif
 
     const auto qmask = _mask / SIZE_BIT;
@@ -1519,12 +1526,19 @@ class safe_hash_map {
 #if EMH_ITER_SAFE
     size_t bmask;
     memcpy(&bmask, align + 0, sizeof(bmask));
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    bmask = __builtin_bswap64(bmask);
+#endif
     bmask >>= boset;
 #else
-    const auto bmask =
-        (*(size_t*)(align) >> boset);  // maybe not aligned and warning
+    size_t bmask_raw;
+    memcpy(&bmask_raw, align, sizeof(bmask_raw));
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    bmask_raw = __builtin_bswap64(bmask_raw);
 #endif
-    if (EMH_LIKELY(bmask != 0)) return bucket_from + CTZ(bmask);
+    const auto bmask = (bmask_raw >> boset);  // maybe not aligned and warning
+#endif
+    if (EMH_LIKELY(bmask != 0)) return bucket_from + __builtin_ctzll(bmask);
 
     const auto qmask = _mask / SIZE_BIT;
     for (auto last = (bucket_from + _mask) & qmask;;) {
